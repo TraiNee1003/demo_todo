@@ -8,32 +8,38 @@
         <table class="table table-striped table-bordered">
             <thead class="table-primary">
                 <tr>
+                    <th>#</th>
                     <th>Title</th>
                     <th>Description</th>
-                    <th>Duration (Days)</th>
+                    <th>Assigned For</th>
+                    <th>Status</th>
+                    <th>Assigned At</th>
+                    <th>Accepted At</th>
+                    <th>Due In (Days)</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($tasks as $task)
+                @foreach($tasks as $index => $task)
                     <tr>
+                        <td>{{ $index + 1 }}</td>
                         <td>{{ $task->title }}</td>
                         <td>{{ $task->description }}</td>
-                        <td>{{ $task->duration_days }}</td>
+                        <td>{{ $task->employee->name }}</td>
+                        <td>{{ ucfirst($task->status) }}</td>
+                        <td>{{ $task->created_at->format('Y-m-d') }}</td>
+                        <td>{{ $task->accepted_at ? $task->accepted_at->format('Y-m-d') : 'N/A' }}</td>
+                        <td>{{ $task->accepted_at ? $task->duration_days - $task->accepted_at->diffInDays(now()) : $task->duration_days }}</td>
                         <td>
                             @if(Auth::user()->role === 1)
                                 <a href="{{ route('tasks.show', $task) }}" class="btn btn-info btn-sm">View Details</a>
                             @else
-                                <form method="POST" action="{{ route('tasks.accept', $task) }}" class="d-inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-success btn-sm">Accept</button>
-                                </form>
-                                <form method="POST" action="{{ route('tasks.reject', $task) }}" class="d-inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                                </form>
+                                @if($task->status === 'pending')
+                                    <button class="btn btn-success btn-sm" onclick="handleTaskAction('accept', {{ $task->id }})">Accept</button>
+                                    <button class="btn btn-danger btn-sm" onclick="handleTaskAction('reject', {{ $task->id }})">Reject</button>
+                                @elseif($task->status === 'processing')
+                                    <button class="btn btn-warning btn-sm" onclick="handleTaskAction('complete', {{ $task->id }})">Complete</button>
+                                @endif
                             @endif
                         </td>
                     </tr>
@@ -42,4 +48,35 @@
         </table>
     </div>
 </div>
+
+<script>
+function handleTaskAction(action, taskId) {
+    let url;
+    switch(action) {
+        case 'accept':
+            url = `{{ route('tasks.accept', ':id') }}`.replace(':id', taskId);
+            break;
+        case 'reject':
+            url = `{{ route('tasks.reject', ':id') }}`.replace(':id', taskId);
+            break;
+        case 'complete':
+            url = `{{ route('tasks.complete', ':id') }}`.replace(':id', taskId);
+            break;
+    }
+
+    $.ajax({
+        url: url,
+        type: 'PATCH',
+        data: {
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            location.reload();
+        },
+        error: function(response) {
+            alert('An error occurred while performing the action.');
+        }
+    });
+}
+</script>
 @endsection

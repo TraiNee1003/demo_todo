@@ -24,7 +24,7 @@ class TaskController extends Controller
 
     public function create()
     {
-        $employees = User::where('role', 'employee')->get();
+        $employees = User::where('role', 0)->get(); // Assuming '0' is for employees
         return view('tasks.create', compact('employees'));
     }
 
@@ -56,28 +56,27 @@ class TaskController extends Controller
     public function accept(Task $task)
     {
         if ($task->employee_id === auth()->id() && $task->status === 'pending') {
-            $task->update(['status' => 'processing']);
-            return redirect()->route('employee.tasks')->with('success', 'Task accepted.');
+            $task->update(['status' => 'processing', 'accepted_at' => now()]);
+            return response()->json(['success' => true]);
         }
-        return redirect()->route('employee.tasks')->with('error', 'Unable to accept task.');
+        return response()->json(['success' => false, 'message' => 'Unable to accept task.'], 403);
     }
-
+    
     public function reject(Task $task)
     {
         if ($task->employee_id === auth()->id() && $task->status === 'pending') {
             $task->update(['status' => 'rejected']);
-            return redirect()->route('employee.tasks')->with('success', 'Task rejected.');
+            return response()->json(['success' => true]);
         }
-        return redirect()->route('employee.tasks')->with('error', 'Unable to reject task.');
+        return response()->json(['success' => false, 'message' => 'Unable to reject task.'], 403);
     }
-
-    public function updateStatus(Request $request, Task $task)
+    
+    public function complete(Task $task)
     {
-        if ($task->employee_id === auth()->id() && in_array($request->status, ['completed', 'processing'])) {
-            $task->update(['status' => $request->status]);
-            return redirect()->route('employee.tasks')->with('success', 'Task status updated.');
+        if ($task->employee_id === auth()->id() && $task->status === 'processing') {
+            $task->update(['status' => 'completed']);
+            return response()->json(['success' => true]);
         }
-        return redirect()->route('employee.tasks')->with('error', 'Unable to update task status.');
+        return response()->json(['success' => false, 'message' => 'Unable to complete task.'], 403);
     }
 }
-

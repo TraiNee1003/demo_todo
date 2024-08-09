@@ -15,7 +15,13 @@ class Task extends Model
         'description',
         'duration_days',
         'status',
+        'accepted_at',
     ];
+    
+    protected $casts = [
+        'accepted_at' => 'datetime',
+    ];
+    
 
     public function employee()
     {
