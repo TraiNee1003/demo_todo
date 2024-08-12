@@ -9,11 +9,19 @@ use Illuminate\Http\Request;
 class TaskController extends Controller
 {
     // For employees
+    // public function index()
+    // {
+    //     $tasks = Task::where('employee_id', auth()->id())->get();
+    //     return view('tasks.index', compact('tasks'));
+    // }
     public function index()
     {
-        $tasks = Task::where('employee_id', auth()->id())->get();
+        $tasks = Task::where('employee_id', auth()->id())
+                    ->where('status', '!=', 'rejected') // Exclude rejected tasks
+                    ->get();
         return view('tasks.index', compact('tasks'));
     }
+
 
     // For admins
     public function adminIndex()

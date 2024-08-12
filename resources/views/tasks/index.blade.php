@@ -21,7 +21,7 @@
             </thead>
             <tbody>
                 @foreach($tasks as $index => $task)
-                    <tr>
+                    <tr id="task-row-{{ $task->id }}">
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $task->title }}</td>
                         <td>{{ $task->description }}</td>
@@ -29,7 +29,7 @@
                         <td>{{ ucfirst($task->status) }}</td>
                         <td>{{ $task->created_at->format('Y-m-d') }}</td>
                         <td>{{ $task->accepted_at ? $task->accepted_at->format('Y-m-d') : 'N/A' }}</td>
-                        <td>{{ $task->accepted_at ? $task->duration_days - $task->accepted_at->diffInDays(now()) : $task->duration_days }}</td>
+                        <td>{{ $task->accepted_at ? number_format($task->duration_days - $task->accepted_at->diffInDays(now()), 0) : number_format($task->duration_days, 0) }}</td>
                         <td>
                             @if(Auth::user()->role === 1)
                                 <a href="{{ route('tasks.show', $task) }}" class="btn btn-info btn-sm">View Details</a>
@@ -62,18 +62,31 @@ function handleTaskAction(action, taskId) {
         case 'complete':
             url = `{{ route('tasks.complete', ':id') }}`.replace(':id', taskId);
             break;
+        default:
+            console.error('Unknown action:', action);
+            return;
     }
 
     $.ajax({
         url: url,
         type: 'PATCH',
         data: {
-            _token: '{{ csrf_token() }}'
+            _token: '{{ csrf_token() }}',
         },
         success: function(response) {
-            location.reload();
+            if (response.success) {
+                if (action === 'reject') {
+                    // Remove the task row from the table
+                    $(`#task-row-${taskId}`).remove();
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert(response.message || 'An error occurred while performing the action.');
+            }
         },
         error: function(response) {
+            console.error('AJAX error:', response);
             alert('An error occurred while performing the action.');
         }
     });
