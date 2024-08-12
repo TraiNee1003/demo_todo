@@ -2,19 +2,21 @@
 
 @section('content')
 <div class="container mt-5">
-    <h1 class="mb-4 text-center text-primary">Tasks</h1>
+    <div class="h1 mb-4 text-center  border-bottom">
+    <h1 class=" text-center text-primary-dark">TASKS DETAILS</h1>
+    </div>
 
     <div class="table-responsive shadow-sm rounded bg-light">
-        <table class="table table-hover table-bordered table-striped">
-            <thead class="thead-dark">
+        <table class="table align-middle mb-0 bg-white">
+            <thead class="thead-light">
                 <tr class="text-center">
                     <th>#</th>
-                    <th>Title</th>
-                    <th>Description</th>
+                    <th class="text-left">Title</th>
                     <th>Assigned For</th>
                     <th>Status</th>
                     <th>Assigned At</th>
                     <th>Accepted At</th>
+                    <th>Set Due</th>
                     <th>Due In (Days)</th>
                     <th>Actions</th>
                 </tr>
@@ -22,8 +24,8 @@
             <tbody>
                 @foreach($tasks as $index => $task)
                 <tr id="task-row-{{ $task->id }}" class="
-                    @if($task->status === 'pending') table-warning
-                    @elseif($task->status === 'processing') table-info
+                    @if($task->status === 'pending') table-warning 
+                    @elseif($task->status === 'processing') table-light
                     @elseif($task->status === 'completed') table-light
                     @elseif($task->status === 'rejected') table-danger
                     @else table-secondary
@@ -32,8 +34,7 @@
                     ">
                     <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
                     <td>{{ $task->title }}</td>
-                    <td>{{ $task->description }}</td>
-                    <td>{{ $task->employee->name }}</td>
+                    <td class="text-center">{{ $task->employee->name }}</td>
                     <td class="text-center">
                         <span class="badge 
                             @if($task->status === 'pending') badge-warning
@@ -44,9 +45,10 @@
                             @endif
                             ">{{ ucfirst($task->status) }}</span>
                     </td>
-                    <td>{{ $task->created_at->format('Y-m-d') }}</td>
-                    <td>{{ $task->accepted_at ? $task->accepted_at->format('Y-m-d') : 'N/A' }}</td>
-                    <td>{{ $task->accepted_at ? number_format($task->duration_days - $task->accepted_at->diffInDays(now()), 0) : number_format($task->duration_days, 0) }}</td>
+                    <td class="text-center">{{ $task->created_at->format('Y-m-d') }}</td>
+                    <td class="text-center">{{ $task->accepted_at ? $task->accepted_at->format('Y-m-d') : 'N/A' }}</td>
+                    <td class="text-center">{{ $task->duration_days }}</td>
+                    <td class="text-center">{{ $task->accepted_at ? number_format($task->duration_days - $task->accepted_at->diffInDays(now()), 0) : number_format($task->duration_days, 0) }}</td>
                     <td class="text-center">
                         @if(Auth::user()->role === 1)
                             <a href="{{ route('tasks.show', $task) }}" class="btn btn-outline-info btn-sm">
@@ -105,7 +107,7 @@ function handleTaskAction(action, taskId) {
                         $(this).remove();
                     });
                 } else {
-                    location.reload();
+                    // location.reload();
                 }
             } else {
                 alert(response.message || 'An error occurred while performing the action.');
