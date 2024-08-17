@@ -22,7 +22,7 @@
                         <td>{{ $task->title }}</td>
                         <td>{{ $task->description }}</td>
                         <td>{{ $task->employee->name }}</td>
-                        <td>{{ $task->status }}</td>
+                        <td>{{ $task->status->name }}</td>
                         <td>{{ $task->duration_days }}</td>
                         <td>{{ $task->completed_at ? $task->completed_at->format('Y-m-d') : 'N/A' }}</td>
                     </tr>

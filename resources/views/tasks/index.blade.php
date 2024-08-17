@@ -2,8 +2,8 @@
 
 @section('content')
 <div class="container mt-5">
-    <div class="h1 mb-4 text-center  border-bottom">
-    <h1 class=" text-center text-primary-dark">TASKS DETAILS</h1>
+    <div class="h1 mb-4 text-center border-bottom">
+        <h1 class="text-center text-primary-dark">TASKS DETAILS</h1>
     </div>
 
     <div class="table-responsive shadow-sm rounded bg-light">
@@ -24,50 +24,63 @@
             <tbody>
                 @foreach($tasks as $index => $task)
                 <tr id="task-row-{{ $task->id }}" class="
-                    @if($task->status === 'pending') table-warning 
-                    @elseif($task->status === 'processing') table-light
-                    @elseif($task->status === 'completed') table-light
-                    @elseif($task->status === 'rejected') table-danger
+                    @if($task->status_id === $pendingStatusId) table-warning 
+                    @elseif($task->status_id === $processingStatusId) table-light
+                    @elseif($task->status_id === $completedStatusId) table-light
+                    @elseif($task->status_id === $rejectedStatusId) table-danger
                     @else table-secondary
                     @endif
-                    text-dark
-                    ">
+                    text-dark">
                     <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
                     <td>{{ $task->title }}</td>
                     <td class="text-center">{{ $task->employee->name }}</td>
                     <td class="text-center">
                         <span class="badge 
-                            @if($task->status === 'pending') badge-warning
-                            @elseif($task->status === 'processing') badge-info
-                            @elseif($task->status === 'completed') badge-success
-                            @elseif($task->status === 'rejected') badge-danger
+                            @if($task->status_id === $pendingStatusId) badge-warning
+                            @elseif($task->status_id === $processingStatusId) badge-info
+                            @elseif($task->status_id === $completedStatusId) badge-success
+                            @elseif($task->status_id === $rejectedStatusId) badge-danger
                             @else badge-secondary
-                            @endif
-                            ">{{ ucfirst($task->status) }}</span>
+                            @endif">
+                            {{ ucfirst($task->status->name) }}
+                        </span>
                     </td>
-                    <td class="text-center">{{ $task->created_at->format('Y-m-d') }}</td>
-                    <td class="text-center">{{ $task->accepted_at ? $task->accepted_at->format('Y-m-d') : 'N/A' }}</td>
-                    <td class="text-center">{{ $task->duration_days }}</td>
-                    <td class="text-center">{{ $task->accepted_at ? number_format($task->duration_days - $task->accepted_at->diffInDays(now()), 0) : number_format($task->duration_days, 0) }}</td>
+                    <td class="text-center">{{ $task->created_at->format('Y-m-d H:i') }}</td>
                     <td class="text-center">
-                        @if(Auth::user()->role === 1)
+                        @if($task->accepted_at)
+                            {{ $task->accepted_at->format('Y-m-d H:i') }}
+                        @else
+                            N/A
+                        @endif
+                    </td>
+                    <td class="text-center">
+                        @if($task->set_due)
+                            {{ $task->set_due->format('Y-m-d H:i') }}
+                        @else
+                            N/A
+                        @endif
+                    </td>
+                    <td class="text-center">
+                        @php
+                            $dueInDays = $task->set_due ? $task->created_at->diffInDays($task->set_due) : 'N/A';
+                            echo $dueInDays;
+                        @endphp
+                    </td>
+                    <td class="text-center">
+                    @if(Auth::user()->role === 1)
                             <a href="{{ route('tasks.show', $task) }}" class="btn btn-outline-info btn-sm">
                                 <i class="fas fa-eye"></i> View
                             </a>
                         @else
-                            @if($task->status === 'pending')
-                                <button class="btn btn-outline-success btn-sm" onclick="handleTaskAction('accept', {{ $task->id }})">
-                                    <i class="fas fa-check"></i> Accept
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="handleTaskAction('reject', {{ $task->id }})">
-                                    <i class="fas fa-times"></i> Reject
-                                </button>
-                            @elseif($task->status === 'processing')
-                                <button class="btn btn-outline-warning btn-sm" onclick="handleTaskAction('complete', {{ $task->id }})">
-                                    <i class="fas fa-clipboard-check"></i> Complete
-                                </button>
-                            @endif
+                        @if($task->status_id === $pendingStatusId)
+                            <button onclick="handleTaskAction('accept', {{ $task->id }})" class="btn btn-success btn-sm">Accept</button>
+                            <button onclick="handleTaskAction('reject', {{ $task->id }})" class="btn btn-danger btn-sm">Reject</button>
+                        @elseif($task->status_id === $processingStatusId)
+                            <button onclick="handleTaskAction('complete', {{ $task->id }})" class="btn btn-info btn-sm">Complete</button>
+                        @else
+                            <span class="text-muted">No Actions Available</span>
                         @endif
+                    @endif
                     </td>
                 </tr>
                 @endforeach
@@ -89,35 +102,31 @@ function handleTaskAction(action, taskId) {
         case 'complete':
             url = `{{ route('tasks.complete', ':id') }}`.replace(':id', taskId);
             break;
-        default:
-            console.error('Unknown action:', action);
-            return;
     }
 
     $.ajax({
         url: url,
         type: 'PATCH',
         data: {
-            _token: '{{ csrf_token() }}',
+            _token: '{{ csrf_token() }}'
         },
         success: function(response) {
             if (response.success) {
                 if (action === 'reject') {
-                    $(`#task-row-${taskId}`).fadeOut(500, function() {
-                        $(this).remove();
-                    });
+                    $(`#task-row-${taskId}`).remove(); // Remove the rejected task from the table
                 } else {
-                    // location.reload();
+                    location.reload();
                 }
             } else {
-                alert(response.message || 'An error occurred while performing the action.');
+                alert(response.message);
             }
         },
         error: function(response) {
-            console.error('AJAX error:', response);
             alert('An error occurred while performing the action.');
         }
     });
 }
+
 </script>
+
 @endsection

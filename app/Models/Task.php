@@ -14,7 +14,7 @@ class Task extends Model
         'title',
         'description',
         'duration_days',
-        'status',
+        'status_id',
         'accepted_at',
     ];
     
@@ -22,7 +22,10 @@ class Task extends Model
         'accepted_at' => 'datetime',
     ];
     
-
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status_id');
+    }
     public function employee()
     {
         return $this->belongsTo(User::class);

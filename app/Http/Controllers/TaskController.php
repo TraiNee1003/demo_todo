@@ -4,30 +4,50 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Status;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
     // For employees
-    // public function index()
-    // {
-    //     $tasks = Task::where('employee_id', auth()->id())->get();
-    //     return view('tasks.index', compact('tasks'));
-    // }
     public function index()
     {
-        $tasks = Task::where('employee_id', auth()->id())
-                    ->where('status', '!=', 'rejected') // Exclude rejected tasks
-                    ->get();
-        return view('tasks.index', compact('tasks'));
-    }
+        $rejectedStatusId = Status::where('name', 'rejected')->first()->id;
+        $pendingStatusId = Status::where('name', 'pending')->first()->id;
+        $processingStatusId = Status::where('name', 'processing')->first()->id;
+        $completedStatusId = Status::where('name', 'completed')->first()->id;
 
+        // Fetch tasks that are not rejected
+        $tasks = Task::where('employee_id', auth()->id())
+                     ->where('status_id', '!=', $rejectedStatusId)
+                     ->get();
+
+        return view('tasks.index', compact(
+            'tasks',
+            'pendingStatusId',
+            'processingStatusId',
+            'completedStatusId',
+            'rejectedStatusId'
+        ));
+    }
 
     // For admins
     public function adminIndex()
     {
+        $pendingStatusId = Status::where('name', 'pending')->first()->id;
+        $processingStatusId = Status::where('name', 'processing')->first()->id;
+        $completedStatusId = Status::where('name', 'completed')->first()->id;
+        $rejectedStatusId = Status::where('name', 'rejected')->first()->id;
+
         $tasks = Task::all();
-        return view('tasks.index', compact('tasks'));
+
+        return view('tasks.index', compact(
+            'tasks',
+            'pendingStatusId',
+            'processingStatusId',
+            'completedStatusId',
+            'rejectedStatusId'
+        ));
     }
 
     public function create()
@@ -45,15 +65,18 @@ class TaskController extends Controller
             'duration_days' => 'required|integer|min:1',
         ]);
 
+        // Get the ID for the 'pending' status
+        $pendingStatusId = Status::where('name', 'pending')->first()->id;
+
         Task::create([
             'employee_id' => $request->employee_id,
             'title' => $request->title,
             'description' => $request->description,
             'duration_days' => $request->duration_days,
-            'status' => 'pending',
+            'status_id' => $pendingStatusId, // Set status to 'pending'
         ]);
 
-        return redirect()->route('admin.tasks')->with('success', 'Task created successfully.');
+        return redirect()->route('tasks.create')->with('success', 'Task created successfully.');
     }
 
     public function show(Task $task)
@@ -63,26 +86,38 @@ class TaskController extends Controller
 
     public function accept(Task $task)
     {
-        if ($task->employee_id === auth()->id() && $task->status === 'pending') {
-            $task->update(['status' => 'processing', 'accepted_at' => now()]);
+        // Get the ID for the 'processing' status
+        $processingStatusId = Status::where('name', 'processing')->first()->id;
+        $pendingStatusId = Status::where('name', 'pending')->first()->id;
+
+        if ($task->employee_id === auth()->id() && $task->status_id === $pendingStatusId) {
+            $task->update(['status_id' => $processingStatusId, 'accepted_at' => now()]);
             return response()->json(['success' => true]);
         }
         return response()->json(['success' => false, 'message' => 'Unable to accept task.'], 403);
     }
-    
+
     public function reject(Task $task)
     {
-        if ($task->employee_id === auth()->id() && $task->status === 'pending') {
-            $task->update(['status' => 'rejected']);
+        // Get the ID for the 'rejected' status
+        $rejectedStatusId = Status::where('name', 'rejected')->first()->id;
+        $pendingStatusId = Status::where('name', 'pending')->first()->id;
+
+        if ($task->employee_id === auth()->id() && $task->status_id === $pendingStatusId) {
+            $task->update(['status_id' => $rejectedStatusId]);
             return response()->json(['success' => true]);
         }
         return response()->json(['success' => false, 'message' => 'Unable to reject task.'], 403);
     }
-    
+
     public function complete(Task $task)
     {
-        if ($task->employee_id === auth()->id() && $task->status === 'processing') {
-            $task->update(['status' => 'completed']);
+        // Get the ID for the 'completed' status
+        $completedStatusId = Status::where('name', 'completed')->first()->id;
+        $processingStatusId = Status::where('name', 'processing')->first()->id;
+
+        if ($task->employee_id === auth()->id() && $task->status_id === $processingStatusId) {
+            $task->update(['status_id' => $completedStatusId]);
             return response()->json(['success' => true]);
         }
         return response()->json(['success' => false, 'message' => 'Unable to complete task.'], 403);

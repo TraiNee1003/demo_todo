@@ -26,9 +26,9 @@
                     </tr>
                     <tr>
                         <th>Status</th>
-                        <td>{{ $task->status }}</td>
+                        <td>{{ $task->status->name }}</td>
                     </tr>
-                    @if($task->status === 'completed')
+                    @if($task->status->name === 'completed')
                     <tr>
                         <th>Completion Status</th>
                         <td class="text-success">Task Completed!</td>
